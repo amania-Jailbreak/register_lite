@@ -1,0 +1,30 @@
+{
+  "name": "register_lite",
+  "version": "1.0.0",
+  "description": "Lite Register System",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=dev node src/main.js",
+    "start": "node src/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amania-Jailbreak/register_lite.git"
+  },
+  "keywords": [
+    "register"
+  ],
+  "author": "amania",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/amania-Jailbreak/register_lite/issues"
+  },
+  "homepage": "https://github.com/amania-Jailbreak/register_lite#readme",
+  "dependencies": {
+    "consola": "^3.4.0",
+    "cross-env": "^7.0.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.14.0"
+  }
+}
