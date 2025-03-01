@@ -187,6 +187,47 @@ app.post("/api/v1/item", async (req, res) => {
   res.status(201).json({ message: "Item added successfully" });
 });
 
+app.put("/api/v1/item", async (req, res) => {
+  const { name, price, category } = req.body;
+  if (!name || !price) {
+    return res.status(400).json({ message: "Invalid request" });
+  }
+  if (typeof price !== "number") {
+    return res.status(400).json({ message: "Price must be a number" });
+  }
+  if (!category.includes(category)) {
+    return res.status(400).json({ message: "Allowed categories:" + category });
+  }
+  const item = await client
+    .db("register_lite")
+    .collection("items")
+    .findOne({ name });
+  if (!item) {
+    return res.status(404).json({ message: "Item not found" });
+  }
+  await client
+    .db("register_lite")
+    .collection("items")
+    .updateOne({ name }, { $set: { price, category } });
+  res.status(200).json({ message: "Item updated successfully" });
+});
+
+app.delete("/api/v1/item", async (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ message: "Invalid request" });
+  }
+  const item = await client
+    .db("register_lite")
+    .collection("items")
+    .findOne({ name });
+  if (!item) {
+    return res.status(404).json({ message: "Item not found" });
+  }
+  await client.db("register_lite").collection("items").deleteOne({ name });
+  res.status(200).json({ message: "Item deleted successfully" });
+});
+
 app.listen(port, () => {
   consola.success(`Server running on port ${port}`);
   if (process.env.NODE_ENV === "dev") {
