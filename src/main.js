@@ -14,10 +14,14 @@ const app = express();
 const port = 5010;
 const jwt = require("jsonwebtoken");
 const { consola, createConsola } = require("consola");
+const expressws = require("express-ws");
+const { json } = require("stream/consumers");
+expressws(app);
 consola.start("Starting backend server");
 app.use(express.json());
 
-let category = ["ラーメン", "トップング", "ドリンク"];
+var creating = [];
+let category = ["ラーメン", "トッピング", "ドリンク"];
 // is_debug
 if (process.env.NODE_ENV === "dev") {
   consola.info("Development mode");
@@ -41,6 +45,56 @@ client
 
 // * API Version 1
 // TODO: AstroAccountsサービスを作成し、ユーザーの登録、ログイン、ログアウト、ユーザー情報の取得を行う
+// * WebSocket API
+
+app.ws("/api/v1/websocket", (ws) => {
+  consola.info("WebSocket connected");
+  ws.send("Connected to WebSocket");
+
+  ws.on("message", async (msg) => {
+    if (msg.startsWith("buy")) {
+      const found = [];
+      const items = msg.split(" ");
+      items.shift();
+      for (const item of items) {
+        const itemData = await client
+          .db("register_lite")
+          .collection("items")
+          .findOne({ name: item });
+        if (!itemData) {
+          consola.warn("Item not found: " + item);
+        } else {
+          consola.info("Item found: " + item);
+          found.push(itemData);
+        }
+      }
+      const sort = {};
+      found.forEach((item) => {
+        if (!sort[item.category]) {
+          sort[item.category] = [];
+        }
+        sort[item.category].push(item);
+      });
+      const random = Math.floor(Math.random() * 10000);
+      creating.push(random);
+      sort["num"] = random;
+      let totalAmount = 0;
+      for (const category in sort) {
+        if (category !== "num") {
+          sort[category].forEach((item) => {
+            totalAmount += item.price;
+          });
+        }
+      }
+      sort["totalAmount"] = totalAmount;
+      ws.send(JSON.stringify(sort));
+    }
+  });
+
+  ws.on("close", (code, reason) => {
+    consola.info(`WebSocket closed with code: ${code}, reason: ${reason}`);
+  });
+});
 
 app.use((req, res, next) => {
   if (process.env.NODE_ENV === "dev") {
@@ -52,7 +106,10 @@ app.use((req, res, next) => {
   }
   consola.info(`[${req.method}] ${ip_address} : ${req.url}`);
 
-  if (req.url === "/api/v1/login" || req.url === "/api/v1/register") {
+  if (
+    (req.url === "/api/v1/login" || req.url === "/api/v1/register",
+    req.url === "/api/v1/websocket")
+  ) {
     return next();
   }
 
@@ -175,9 +232,7 @@ app.post("/api/v1/item", async (req, res) => {
     .db("register_lite")
     .collection("items")
     .findOne({ name });
-  console.log(item);
   if (item) {
-    consola.warn("Item already exists");
     return res.status(409).json({ message: "Item already exists" });
   }
   await client
@@ -226,6 +281,10 @@ app.delete("/api/v1/item", async (req, res) => {
   }
   await client.db("register_lite").collection("items").deleteOne({ name });
   res.status(200).json({ message: "Item deleted successfully" });
+});
+
+app.get("/api/v1/category", (req, res) => {
+  res.status(200).json({ category });
 });
 
 app.listen(port, () => {
